@@ -4,6 +4,8 @@ import subprocess
 from zipfile import ZipFile
 import glob
 
+import requests
+
 from textx import generator_for_language_target, metamodel_for_language
 from confluent_kafka import Consumer, Producer
 from dotenv import load_dotenv
@@ -59,11 +61,22 @@ def publish_artefacts_url(config, scenery_id, url, description=None, use_case="K
     producer.produce(topic, key=scenery_id, value=url, headers=headers, callback=delivery_callback)
     producer.flush()
 
-def get_floorplan_model(model, file_path):
-    return file_path
+def get_floorplan_model(model, url):
+    response = requests.get(url, stream=True)
+
+    zip_file_path = "{}.zip".format(model)
+
+    with open(zip_file_path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=128):
+            f.write(chunk)
+    return zip_file_path
 
 def upload_artefacts_to_server(file_path):
-    pass
+    url = os.getenv("REST_UPLOAD_ARTEFACT_URL")
+    files = {"zipFile": open(file_path, "rb")}
+
+    response = requests.post(url, files=files)
+    return response.json().get("filePath")
 
 def transform_to_jsonld(file_path):
     dest_path = "/tmp/floorplan"
@@ -106,16 +119,24 @@ if __name__ == '__main__':
             elif msg.error():
                 print("ERROR: %s".format(msg.error()))
             else:
-                model = msg.key().decode('utf-8') if msg.key() is not None else ""
-                url = msg.value().decode('utf-8') if msg.value() is not None else ""
+                key = msg.key().decode('utf-8') if msg.key() is not None else ""
+                value = msg.value().decode('utf-8') if msg.value() is not None else ""
+                url = value.get(key)
+                print("key: ", key)
+                print("value: ", type(value), value)
 
-                scenery_id = model # This should be the model
+                scenery_id = key # This should be the model
+                # TODO The message value doesn't follow the schema
+                # Remove hack after it's fixed
+                # url.pop("documentId", None)
+                # model, url = url.popitem()
 
-                print("Notification received. {} model stored at {}".format(model, url))
+                print("Notification received. {} model stored at {}".format(scenery_id, url))
 
                 # Getting model from server
                 print("Get model from KB via REST API")
-                file_path = get_floorplan_model(model, url)
+                file_path = get_floorplan_model(scenery_id, url)
+                # file_path = "/Users/argen/100 Projects/floorplan/dsl/models/examples/hospital.fpm2"
 
                 print("Converting to json-ld...")
                 # M2M transformation to json-ld representation
@@ -138,12 +159,12 @@ if __name__ == '__main__':
                 # Upload artefact to server
                 print("Uploading {} to server".format(artefact_zip_path))
                 artefact_path_server = upload_artefacts_to_server(artefact_zip_path)
-                artefact_path_server = "/atb-server/this/is/the/path/{}.zip".format(scenery_id) # TODO Temporary to test
+                # artefact_path_server = "/atb-server/this/is/the/path/{}.zip".format(scenery_id) # TODO Temporary to test
 
                 # Call publish_artefact_url
                 print("Sending Kafka notification about local path")
                 producer_config = dict(**BASIC_CONFIG, **PRODUCER_CONFIG)
-                # publish_artefacts_url(producer_config, scenery_id=scenery_id, use_case="KUKA", url=artefact_path_server)
+                publish_artefacts_url(producer_config, scenery_id=scenery_id, use_case="KUKA", url=artefact_path_server)
 
     except KeyboardInterrupt:
         pass
