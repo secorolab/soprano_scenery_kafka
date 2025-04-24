@@ -37,6 +37,9 @@ if __name__ == "__main__":
     topic = "floorplan-model"
 
     producer.produce(topic, key="hospital", value="/Users/argen/100 Projects/floorplan/dsl/models/examples/hospital.fpm2", callback=delivery_callback)
+    # msg = {"hospital":"http://kb-soprano.atb-bremen.de:8000/artefact-files/hospital.zip","documentId":"edItZJYBKXPZym_OWJfn"}
+    # producer.produce(topic, msg, callback=delivery_callback)
+
     producer.flush()
     # wait
     time.sleep(3)
