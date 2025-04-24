@@ -6,7 +6,7 @@ The consumer listens to the `floorplan-model` topic, generates the corresponding
 
 ## Requirements
 
-This assumes you have a local installation of the [FloorPlan DSL]() and the [scenery_builder]().
+This assumes you have a local installation of the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) and the [scenery_builder](https://github.com/secorolab/scenery_builder).
 
 You'll also need to install Confluent Kafka:
 
