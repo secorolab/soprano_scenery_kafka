@@ -80,8 +80,8 @@ def upload_artefacts_to_server(file_path):
 
 def transform_to_jsonld(file_path):
     dest_path = "/tmp/floorplan"
-    generator = generator_for_language_target("floorplan-v2", "json-ld")
-    mm = metamodel_for_language("floorplan-v2")
+    generator = generator_for_language_target("fpm", "json-ld")
+    mm = metamodel_for_language("fpm")
     model = mm.model_from_file(file_path)
     generator(mm, model, dest_path, overwrite=True)
     return dest_path
@@ -121,9 +121,9 @@ if __name__ == '__main__':
             else:
                 key = msg.key().decode('utf-8') if msg.key() is not None else ""
                 value = msg.value().decode('utf-8') if msg.value() is not None else ""
-                url = value.get(key)
                 print("key: ", key)
                 print("value: ", type(value), value)
+                url = value
 
                 scenery_id = key # This should be the model
                 # TODO The message value doesn't follow the schema
@@ -136,7 +136,10 @@ if __name__ == '__main__':
                 # Getting model from server
                 print("Get model from KB via REST API")
                 file_path = get_floorplan_model(scenery_id, url)
-                # file_path = "/Users/argen/100 Projects/floorplan/dsl/models/examples/hospital.fpm2"
+
+                if file_path.endswith(".zip"):
+                    print("Got zip file from server: {}".format(file_path))
+                    file_path = "/Users/argen/100 Projects/floorplan/dsl/models/hospital.fpm"
 
                 print("Converting to json-ld...")
                 # M2M transformation to json-ld representation
@@ -145,7 +148,6 @@ if __name__ == '__main__':
                 print("Generating execution arfefacts...")
                 # Call scenery_builder
                 artefacts_path = generate_artefacts(json_models_path)
-                # TODO Test if occupancy grid can be saved as jpg
 
                 # Store artefacts in zip file
                 # TODO part of previous step? Needed at all for server?
