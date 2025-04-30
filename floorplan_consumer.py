@@ -70,12 +70,12 @@ def publish_artefacts_url(config, scenery_id, url, description=None, use_case="K
 def get_floorplan_model(model, url):
     response = requests.get(url, stream=True)
 
-    zip_file_path = "{}.zip".format(model)
+    model_file_path = os.path.basename(url)
 
-    with open(zip_file_path, "wb") as f:
+    with open(model_file_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=128):
             f.write(chunk)
-    return zip_file_path
+    return model_file_path
 
 
 def upload_artefacts_to_server(file_path):
