@@ -148,11 +148,9 @@ if __name__ == "__main__":
                 print("Get model from KB via REST API")
                 file_path = get_floorplan_model(scenery_id, url)
 
-                if file_path.endswith(".zip"):
-                    print("Got zip file from server: {}".format(file_path))
-                    file_path = (
-                        "/Users/argen/100 Projects/floorplan/dsl/models/hospital.fpm"
-                    )
+                if not file_path.endswith(".fpm"):
+                    print("Got incompatible file from server ({})... ignoring.".format(file_path))
+                    continue
 
                 print("Converting to json-ld...")
                 # M2M transformation to json-ld representation
