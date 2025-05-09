@@ -15,16 +15,26 @@ pip install confluent-kafka requests dotenv
 
 ```
 
+### `.env` file
+
+Create an `.env` file to store your credentials and the relevant API endpoints, for example:
+
+```dotenv
+KAFKA_USER=myuser
+KAFKA_PASS=12345pass
+KAFKA_URL=kafka-url:9000
+REST_UPLOAD_ARTEFACT_URL=http://server-url:8000/api/upload/artefact
+```
+
 ## Running 
 
-After activating your virutal environment, simply run the floorplan consumer:
+After activating your virtual environment, simply run the floorplan consumer:
 
 ```bash
 python floorplan_consumer.py
 ```
 
 The `floorplan_bim_producer.py` and `artefact_consumer.py` are mockup scripts to test subscribing and publishing to the Kafka topics.
-
 
 ### Using Docker
 
@@ -35,5 +45,4 @@ You should use the argument `--env-file` to pass the path of the `.env` file con
 docker run --env-file .env -it mat_kafka:latest
 ```
 
-The [Dockerfile](Dockerfile) uses the images of the development branch of the two map components. The images are built as part of the CI and hosted on GitHub. 
-
+The [Dockerfile](Dockerfile) uses the images of the development branch of the two floorplan components. The images are built as part of the CI and hosted on GitHub. 
