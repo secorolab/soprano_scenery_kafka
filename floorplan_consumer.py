@@ -86,8 +86,7 @@ def upload_artefacts_to_server(file_path):
     return response.json().get("filePath")
 
 
-def transform_to_jsonld(file_path):
-    dest_path = "/tmp/floorplan"
+def transform_to_jsonld(file_path, dest_path="/tmp/floorplan"):
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(file_path)
@@ -95,11 +94,11 @@ def transform_to_jsonld(file_path):
     return dest_path
 
 
-def generate_artefacts(model_path):
-    out_path = "/tmp/scenery"
+def generate_artefacts(model_path, out_path="/tmp/scenery"):
+
     os.makedirs(out_path, exist_ok=True)
     e = subprocess.run(
-        ["floorplan", "generate", "-i", model_path, "--output-path", out_path]
+        ["floorplan", "generate", "--config", "config.toml", "-i", model_path, "--output-path", out_path, "occ-grid", "gazebo", "mesh"]
     )
     print(e)
     return out_path

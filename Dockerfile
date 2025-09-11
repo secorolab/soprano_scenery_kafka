@@ -11,6 +11,7 @@ RUN pip install . -t /usr/src/app/modules
 # New requirements for Kafka script
 RUN pip install confluent-kafka requests dotenv -t /usr/src/app/modules
 COPY floorplan_consumer.py /usr/src/app/
+COPY config.toml /usr/src/app/
 
 WORKDIR /usr/src/app/
 
