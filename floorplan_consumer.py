@@ -187,7 +187,7 @@ if __name__ == "__main__":
 
                 logger.debug("Converting to json-ld...")
 
-                logger.debug("Generating execution arfefacts...")
+                logger.debug("Generating execution artefacts...")
                 # Call scenery_builder
                 artefacts_path = generate_artefacts(json_models_path)
 
