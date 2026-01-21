@@ -70,7 +70,7 @@ def publish_artefacts_url(config, scenery_id, url, description=None, use_case="K
     producer.flush()
 
 
-def get_floorplan_model(model, url):
+def get_floorplan_model(url):
     response = requests.get(url, stream=True)
 
     model_file_path = os.path.basename(url)
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
                 # Getting model from server
                 logger.debug("Get model from KB via REST API")
-                file_path = get_floorplan_model(scenery_id, url)
+                file_path = get_floorplan_model(url)
 
                 if not file_path.endswith(".fpm"):
                     logger.warning(
@@ -179,7 +179,6 @@ if __name__ == "__main__":
                 artefacts_path = generate_artefacts(json_models_path)
 
                 # Store artefacts in zip file
-                # TODO part of previous step? Needed at all for server?
                 rel_paths = glob.glob(
                     "**/*.**", root_dir=artefacts_path, recursive=True
                 )
