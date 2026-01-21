@@ -3,6 +3,7 @@ import os
 import subprocess
 from zipfile import ZipFile
 import glob
+import logging
 
 import requests
 
@@ -10,6 +11,8 @@ from textx import generator_for_language_target, metamodel_for_language
 from confluent_kafka import Consumer, Producer
 from dotenv import load_dotenv
 
+logger = logging.getLogger("mat.kafka_consumer")
+logger.setLevel(logging.DEBUG)
 
 load_dotenv()
 
@@ -36,9 +39,9 @@ PRODUCER_CONFIG = {
 
 def delivery_callback(err, msg):
     if err:
-        print("ERROR: Message failed delivery: {}".format(err))
+        logger.error("Message failed delivery: {}".format(err))
     else:
-        print(
+        logger.debug(
             "Sent message: {timestamp}, {value}".format(
                 timestamp=msg.timestamp(), value=msg.value().decode("utf-8")
             )
@@ -98,9 +101,21 @@ def generate_artefacts(model_path, out_path="/tmp/scenery"):
 
     os.makedirs(out_path, exist_ok=True)
     e = subprocess.run(
-        ["floorplan", "generate", "--config", "config.toml", "-i", model_path, "--output-path", out_path, "occ-grid", "gazebo", "mesh"]
+        [
+            "floorplan",
+            "generate",
+            "--config",
+            "config.toml",
+            "-i",
+            model_path,
+            "--output-path",
+            out_path,
+            "occ-grid",
+            "gazebo",
+            "mesh",
+        ]
     )
-    print(e)
+    logger.info(e)
     return out_path
 
 
@@ -125,37 +140,41 @@ if __name__ == "__main__":
                 # Initial message consumption may take up to
                 # `session.timeout.ms` for the consumer group to
                 # rebalance and start consuming
-                print("Waiting...")
+                logger.debug("Waiting...")
                 continue
             elif msg.error():
-                print("ERROR: %s".format(msg.error()))
+                logger.error(msg.error())
             else:
                 msg_count += 1
-                print("Processing message {}".format(msg_count))
+                logger.info("Processing message {}".format(msg_count))
                 key = msg.key().decode("utf-8") if msg.key() is not None else ""
                 value = msg.value().decode("utf-8") if msg.value() is not None else ""
 
                 url = value
                 scenery_id = key  # This should be the model
-                print(
+                logger.info(
                     "Notification received. {} model stored at {}".format(
                         scenery_id, url
                     )
                 )
 
                 # Getting model from server
-                print("Get model from KB via REST API")
+                logger.debug("Get model from KB via REST API")
                 file_path = get_floorplan_model(scenery_id, url)
 
                 if not file_path.endswith(".fpm"):
-                    print("Got incompatible file from server ({})... ignoring.".format(file_path))
+                    logger.warning(
+                        "Got unsupported file type from server ({})... ignoring.".format(
+                            file_path
+                        )
+                    )
                     continue
 
-                print("Converting to json-ld...")
+                logger.debug("Converting to json-ld...")
                 # M2M transformation to json-ld representation
                 json_models_path = transform_to_jsonld(file_path)
 
-                print("Generating execution arfefacts...")
+                logger.debug("Generating execution arfefacts...")
                 # Call scenery_builder
                 artefacts_path = generate_artefacts(json_models_path)
 
@@ -173,11 +192,12 @@ if __name__ == "__main__":
                         artefacts_zip.write(f, arcname=r)
 
                 # Upload artefact to server
-                print("Uploading {} to server".format(artefact_zip_path))
+                logger.debug("Uploading {} to server".format(artefact_zip_path))
                 artefact_path_server = upload_artefacts_to_server(artefact_zip_path)
+                logger.info("Uploaded successfully at %s", artefact_path_server)
 
                 # Call publish_artefact_url
-                print("Sending Kafka notification about local path")
+                logger.debug("Sending Kafka notification about local path")
                 producer_config = dict(**BASIC_CONFIG, **PRODUCER_CONFIG)
                 publish_artefacts_url(
                     producer_config,
@@ -185,9 +205,10 @@ if __name__ == "__main__":
                     use_case="KUKA",
                     url=artefact_path_server,
                 )
+                logger.info("Notification sent via Kafka")
 
     except KeyboardInterrupt:
-        pass
+        logger.debug("Received keyboard interrupt...")
     finally:
         # Leave group and commit final offsets
         consumer.close()
