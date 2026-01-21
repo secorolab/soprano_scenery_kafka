@@ -20,3 +20,7 @@ negate = 0
 unknown_value = 200
 occupied_value = 0
 free_value = 255
+
+#[generate.tts]
+#robot_translation_x = -0.7
+#robot_translation_z = 1.0

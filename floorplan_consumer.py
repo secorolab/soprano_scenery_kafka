@@ -6,10 +6,12 @@ import glob
 import logging
 
 import requests
+from fpm.generators.scenery import generate_fpm_rep_from_rdf
 
 from textx import generator_for_language_target, metamodel_for_language
 from confluent_kafka import Consumer, Producer
 from dotenv import load_dotenv
+from ifcld.transformations import transform_ifc_to_jsonld
 
 logger = logging.getLogger("mat.kafka_consumer")
 logger.setLevel(logging.DEBUG)
@@ -89,7 +91,7 @@ def upload_artefacts_to_server(file_path):
     return response.json().get("filePath")
 
 
-def transform_to_jsonld(file_path, dest_path="/tmp/floorplan"):
+def transform_fpm_to_jsonld(file_path, dest_path="/tmp/floorplan"):
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(file_path)
@@ -113,6 +115,7 @@ def generate_artefacts(model_path, out_path="/tmp/scenery"):
             "occ-grid",
             "gazebo",
             "mesh",
+            "tts",
         ]
     )
     logger.info(e)
@@ -121,6 +124,7 @@ def generate_artefacts(model_path, out_path="/tmp/scenery"):
 
 if __name__ == "__main__":
 
+    logger.info("Starting the scenery kafka consumer")
     consumer_config = dict(**BASIC_CONFIG, **CONSUMER_CONFIG)
 
     # Create Consumer instance
@@ -129,6 +133,7 @@ if __name__ == "__main__":
     # Subscribe to topic
     topic = "floorplan-model"
     consumer.subscribe([topic])
+    logger.debug("Subscribed to topic %s", topic)
 
     msg_count = 0
 
@@ -162,7 +167,17 @@ if __name__ == "__main__":
                 logger.debug("Get model from KB via REST API")
                 file_path = get_floorplan_model(url)
 
-                if not file_path.endswith(".fpm"):
+                if file_path.endswith(".fpm"):
+                    # M2M transformation to json-ld representation
+                    json_models_path = transform_fpm_to_jsonld(file_path)
+                elif file_path.endswith(".ifc"):
+                    model_name = transform_ifc_to_jsonld(file_path, "/tmp/ifcld")
+                    ifcld_model_path = os.path.join(
+                        "/tpm/ifcld", f"{model_name}.ifc.json"
+                    )
+                    generate_fpm_rep_from_rdf(ifcld_model_path, "/tmp/floorplan")
+                    json_models_path = os.path.join("/tmp/floorplan")
+                else:
                     logger.warning(
                         "Got unsupported file type from server ({})... ignoring.".format(
                             file_path
@@ -171,8 +186,6 @@ if __name__ == "__main__":
                     continue
 
                 logger.debug("Converting to json-ld...")
-                # M2M transformation to json-ld representation
-                json_models_path = transform_to_jsonld(file_path)
 
                 logger.debug("Generating execution arfefacts...")
                 # Call scenery_builder
