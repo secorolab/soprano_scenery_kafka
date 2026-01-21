@@ -167,6 +167,7 @@ if __name__ == "__main__":
                 logger.debug("Get model from KB via REST API")
                 file_path = get_floorplan_model(url)
 
+                logger.debug("Converting to json-ld...")
                 if file_path.endswith(".fpm"):
                     # M2M transformation to json-ld representation
                     json_models_path = transform_fpm_to_jsonld(file_path)
@@ -184,8 +185,6 @@ if __name__ == "__main__":
                         )
                     )
                     continue
-
-                logger.debug("Converting to json-ld...")
 
                 logger.debug("Generating execution artefacts...")
                 # Call scenery_builder
