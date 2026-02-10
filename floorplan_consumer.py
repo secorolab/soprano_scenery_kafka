@@ -74,12 +74,18 @@ def publish_artefacts_url(config, scenery_id, url, description=None, use_case="K
 
 def get_floorplan_model(url):
     response = requests.get(url, stream=True)
+    logger.debug(
+        "Response status code: %s. Headers: %s", response.status_code, response.headers
+    )
 
     model_file_path = os.path.basename(url)
 
     with open(model_file_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=128):
             f.write(chunk)
+
+    logger.debug("Download finished")
+    logger.debug("Model file path: {}".format(model_file_path))
     return model_file_path
 
 
@@ -88,6 +94,10 @@ def upload_artefacts_to_server(file_path):
     files = {"zipFile": open(file_path, "rb")}
 
     response = requests.post(url, files=files)
+    logger.debug(
+        "Response status code: %s. Headers: %s", response.status_code, response.headers
+    )
+    logger.debug("Response: %s", response.json())
     return response.json().get("filePath")
 
 
@@ -154,6 +164,9 @@ if __name__ == "__main__":
                 logger.info("Processing message {}".format(msg_count))
                 key = msg.key().decode("utf-8") if msg.key() is not None else ""
                 value = msg.value().decode("utf-8") if msg.value() is not None else ""
+                logger.debug("Message key: %s", key)
+                logger.debug("Message value: %s", value)
+                logger.debug("Message headers: %s", msg.headers())
 
                 url = value
                 scenery_id = key  # This should be the model
@@ -172,11 +185,22 @@ if __name__ == "__main__":
                     # M2M transformation to json-ld representation
                     json_models_path = transform_fpm_to_jsonld(file_path)
                 elif file_path.endswith(".ifc"):
-                    model_name = transform_ifc_to_jsonld(file_path, "/tmp/ifcld")
+                    try:
+                        model_name = transform_ifc_to_jsonld(file_path, "/tmp/ifcld")
+                    except Exception as e:
+                        logger.error("Transformation from ifc to jsonld failed: %s", e)
+                        continue
+
                     ifcld_model_path = os.path.join(
                         "/tpm/ifcld", f"{model_name}.ifc.json"
                     )
-                    generate_fpm_rep_from_rdf(ifcld_model_path, "/tmp/floorplan")
+                    try:
+                        generate_fpm_rep_from_rdf(ifcld_model_path, "/tmp/floorplan")
+                    except Exception as e:
+                        logger.error(
+                            "Transformation from ifc.json to fpm.json failed: %s", e
+                        )
+                        continue
                     json_models_path = os.path.join("/tmp/floorplan")
                 else:
                     logger.warning(
