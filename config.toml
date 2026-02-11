@@ -1,8 +1,8 @@
 # Parametrize the transformations
 
-#[generate.mesh]
+[generate.mesh]
 # include_doors = false
-# format = "stl"
+ format = ["stl", "gltf"]
 
 [generate.gazebo]
 ros_version = "ros2"
@@ -20,6 +20,7 @@ negate = 0
 unknown_value = 200
 occupied_value = 0
 free_value = 255
+source = "bim"
 
 #[generate.tts]
 #robot_translation_x = -0.7
