@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import subprocess
+import tempfile
 from zipfile import ZipFile
 import glob
 import logging
@@ -179,52 +180,67 @@ if __name__ == "__main__":
                 # Getting model from server
                 logger.debug("Get model from KB via REST API")
                 file_path = get_floorplan_model(url)
+                with tempfile.TemporaryDirectory(prefix="mat_") as tmpdirname:
 
-                logger.debug("Converting to json-ld...")
-                if file_path.endswith(".fpm"):
-                    # M2M transformation to json-ld representation
-                    json_models_path = transform_fpm_to_jsonld(file_path)
-                elif file_path.endswith(".ifc"):
-                    try:
-                        model_name = transform_ifc_to_jsonld(file_path, "/tmp/ifcld")
-                    except Exception as e:
-                        logger.error("Transformation from ifc to jsonld failed: %s", e)
-                        continue
+                    logger.debug("Converting to json-ld...")
+                    if file_path.endswith(".fpm"):
+                        # M2M transformation to json-ld representation
+                        json_models_path = transform_fpm_to_jsonld(file_path)
+                    elif file_path.endswith(".ifc"):
+                        ifcld_model_path = os.path.join(tmpdirname, "ifcld")
+                        os.makedirs(ifcld_model_path, exist_ok=True)
 
-                    ifcld_model_path = os.path.join(
-                        "/tpm/ifcld", f"{model_name}.ifc.json"
-                    )
-                    try:
-                        generate_fpm_rep_from_rdf(ifcld_model_path, "/tmp/floorplan")
-                    except Exception as e:
-                        logger.error(
-                            "Transformation from ifc.json to fpm.json failed: %s", e
+                        try:
+                            model_name = transform_ifc_to_jsonld(
+                                file_path, ifcld_model_path
+                            )
+                        except Exception as e:
+                            logger.error(
+                                "Transformation from ifc to jsonld failed: %s", e
+                            )
+                            continue
+
+                        ifcld_model_file = os.path.join(
+                            ifcld_model_path, f"{model_name}.ifc.json"
+                        )
+                        json_models_path = os.path.join(tmpdirname, "floorplan")
+                        os.makedirs(json_models_path, exist_ok=True)
+                        try:
+                            generate_fpm_rep_from_rdf(
+                                ifcld_model_file, json_models_path
+                            )
+                        except Exception as e:
+                            logger.error(
+                                "Transformation from ifc.json to fpm.json failed: %s", e
+                            )
+                            continue
+                    else:
+                        logger.warning(
+                            "Got unsupported file type from server ({})... ignoring.".format(
+                                file_path
+                            )
                         )
                         continue
-                    json_models_path = os.path.join("/tmp/floorplan")
-                else:
-                    logger.warning(
-                        "Got unsupported file type from server ({})... ignoring.".format(
-                            file_path
-                        )
+
+                    logger.debug("Generating execution artefacts...")
+                    # Call scenery_builder
+                    artefact_out_path = os.path.join(tmpdirname, "artefacts")
+                    os.makedirs(artefact_out_path, exist_ok=True)
+                    artefacts_path = generate_artefacts(
+                        json_models_path, artefact_out_path
                     )
-                    continue
 
-                logger.debug("Generating execution artefacts...")
-                # Call scenery_builder
-                artefacts_path = generate_artefacts(json_models_path)
-
-                # Store artefacts in zip file
-                rel_paths = glob.glob(
-                    "**/*.**", root_dir=artefacts_path, recursive=True
-                )
-                full_paths = glob.glob(
-                    "{}/**/*.*".format(artefacts_path), recursive=True
-                )
-                artefact_zip_path = "{}.zip".format(scenery_id)
-                with ZipFile(artefact_zip_path, "w") as artefacts_zip:
-                    for r, f in zip(rel_paths, full_paths):
-                        artefacts_zip.write(f, arcname=r)
+                    # Store artefacts in zip file
+                    rel_paths = glob.glob(
+                        "**/*.**", root_dir=artefacts_path, recursive=True
+                    )
+                    full_paths = glob.glob(
+                        "{}/**/*.*".format(artefacts_path), recursive=True
+                    )
+                    artefact_zip_path = "{}.zip".format(scenery_id)
+                    with ZipFile(artefact_zip_path, "w") as artefacts_zip:
+                        for r, f in zip(rel_paths, full_paths):
+                            artefacts_zip.write(f, arcname=r)
 
                 # Upload artefact to server
                 logger.debug("Uploading {} to server".format(artefact_zip_path))
