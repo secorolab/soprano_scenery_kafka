@@ -129,7 +129,9 @@ def generate_artefacts(model_path, out_path="/tmp/scenery"):
             "tts",
         ]
     )
-    logger.info(e)
+    logger.debug(e)
+    if e.returncode:
+        logger.error("Error generating artefacts for %s", model_path)
     return out_path
 
 
