@@ -111,25 +111,35 @@ def transform_fpm_to_jsonld(file_path, dest_path="/tmp/floorplan"):
     return dest_path
 
 
-def generate_artefacts(model_path, out_path="/tmp/scenery"):
+def generate_artefacts(model_path, out_path="/tmp/scenery", local=False):
+    # TODO Handle subfolders for different stories
+
+    local = "floorplan"
+    docker = ["blender", "-b", "--python", "modules/fpm/cli.py", "--"]
+    args = [
+        "generate",
+        "--config",
+        "config.toml",
+        "-i",
+        model_path,
+        "--output-path",
+        out_path,
+        "occ-grid",
+        "gazebo",
+        "mesh",
+        "tts",
+    ]
+
+    if local:
+        logger.debug("Local execution mode")
+        args.insert(0, local)
+    else:
+        logger.debug("Docker execution mode")
+        docker.extend(args)
+        args = docker
 
     os.makedirs(out_path, exist_ok=True)
-    e = subprocess.run(
-        [
-            "floorplan",
-            "generate",
-            "--config",
-            "config.toml",
-            "-i",
-            model_path,
-            "--output-path",
-            out_path,
-            "occ-grid",
-            "gazebo",
-            "mesh",
-            "tts",
-        ]
-    )
+    e = subprocess.run(args)
     logger.debug(e)
     if e.returncode:
         logger.error("Error generating artefacts for %s", model_path)
@@ -179,6 +189,12 @@ if __name__ == "__main__":
                         scenery_id, url
                     )
                 )
+                # FIXME Temporarily ignoring the zip files being sent to the wrong channel
+                if not (url.endswith(".fpm") or url.endswith(".ifc")):
+                    logger.warning(
+                        "Received an unsupported file in the floorplan-model channel."
+                    )
+                    continue
 
                 # Getting model from server
                 logger.debug("Get model from KB via REST API")
