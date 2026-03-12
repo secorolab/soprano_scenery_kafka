@@ -1,18 +1,19 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/secorolab/floorplan-dsl:devel AS dsl
+FROM ubuntu:24.04
 
-FROM ghcr.io/secorolab/scenery_builder:devel
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install FloorPlan DSL from base image
-WORKDIR /tmp/floorplan-dsl
-COPY --from=dsl /usr/src/app .
-RUN pip install . -t /usr/src/app/modules
+RUN apt update && \
+    apt install -y software-properties-common git \
+    python3 python3-pip \
+    blender
 
-# New requirements for Kafka script
-RUN pip install confluent-kafka requests dotenv -t /usr/src/app/modules
+# New requirements for Kafka script and scenery_builder
+RUN pip install confluent-kafka requests dotenv git+https://github.com/secorolab/scenery_builder.git@devel -t /usr/src/app/modules --upgrade
 COPY floorplan_consumer.py /usr/src/app/
 COPY config.toml /usr/src/app/
 
+ENV BLENDER_USER_SCRIPTS=/usr/src/app
 WORKDIR /usr/src/app/
 
 ENTRYPOINT []
