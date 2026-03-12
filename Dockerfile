@@ -9,7 +9,7 @@ RUN apt update && \
     blender
 
 # New requirements for Kafka script and scenery_builder
-RUN pip install confluent-kafka requests dotenv git+https://github.com/secorolab/scenery_builder.git@devel -t /usr/src/app/modules --upgrade
+RUN pip install confluent-kafka requests dotenv git+https://github.com/secorolab/scenery_builder.git@devel -t /usr/src/app/modules
 COPY floorplan_consumer.py /usr/src/app/
 COPY config.toml /usr/src/app/
 
