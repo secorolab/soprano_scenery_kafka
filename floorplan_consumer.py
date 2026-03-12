@@ -14,8 +14,46 @@ from confluent_kafka import Consumer, Producer
 from dotenv import load_dotenv
 from ifcld.transformations import transform_ifc_to_jsonld
 
+
+class AnsiColorFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord):
+        no_style = "\033[0m"
+        bold = "\033[91m"
+        grey = "\033[90m"
+        yellow = "\033[93m"
+        red = "\033[31m"
+        red_light = "\033[91m"
+        blue = "\033[34m"
+        start_style = {
+            "DEBUG": grey,
+            "INFO": no_style,
+            "WARNING": yellow,
+            "ERROR": red_light,
+            "CRITICAL": red + bold,
+        }.get(record.levelname, no_style)
+        end_style = no_style
+        return f"{start_style}{super().format(record)}{end_style}"
+
+
 logger = logging.getLogger("mat.kafka_consumer")
 logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+console_formatter = AnsiColorFormatter(
+    "{asctime} | {levelname:<8s} | {name:<30s} | {message}",
+    style="{",
+)
+ch.setFormatter(console_formatter)
+logger.addHandler(ch)
+
+fh = logging.FileHandler("mat.log")
+fh.setLevel(logging.DEBUG)
+file_formatter = logging.Formatter(
+    "{asctime} | {levelname:<8s} | {name:<30s} | {message}",
+    style="{",
+)
+fh.setFormatter(file_formatter)
+logger.addHandler(fh)
 
 load_dotenv()
 
