@@ -103,6 +103,7 @@ def upload_artefacts_to_server(file_path):
 
 
 def transform_fpm_to_jsonld(file_path, dest_path="/tmp/floorplan"):
+    logger.debug("Received fpm model.")
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(file_path)
@@ -189,10 +190,12 @@ if __name__ == "__main__":
                         # M2M transformation to json-ld representation
                         json_models_path = transform_fpm_to_jsonld(file_path)
                     elif file_path.endswith(".ifc"):
+                        logger.debug("Received IFC model.")
                         ifcld_model_path = os.path.join(tmpdirname, "ifcld")
                         os.makedirs(ifcld_model_path, exist_ok=True)
 
                         try:
+                            logger.debug("Transforming IFC model to JSON-LD...")
                             model_name = transform_ifc_to_jsonld(
                                 file_path, ifcld_model_path
                             )
@@ -208,6 +211,7 @@ if __name__ == "__main__":
                         json_models_path = os.path.join(tmpdirname, "floorplan")
                         os.makedirs(json_models_path, exist_ok=True)
                         try:
+                            logger.debug("M2M to fpmld ...")
                             generate_fpm_rep_from_rdf(
                                 ifcld_model_file, json_models_path
                             )
@@ -233,6 +237,7 @@ if __name__ == "__main__":
                     )
 
                     # Store artefacts in zip file
+                    logger.debug("Creating ZIP file...")
                     rel_paths = glob.glob(
                         "**/*.**", root_dir=artefacts_path, recursive=True
                     )
