@@ -23,7 +23,6 @@ class AnsiColorFormatter(logging.Formatter):
         yellow = "\033[93m"
         red = "\033[31m"
         red_light = "\033[91m"
-        blue = "\033[34m"
         start_style = {
             "DEBUG": grey,
             "INFO": no_style,
@@ -185,7 +184,6 @@ def generate_artefacts(model_path, out_path="/tmp/scenery", local=False):
 
 
 if __name__ == "__main__":
-
     logger.info("Starting the scenery kafka consumer")
     consumer_config = dict(**BASIC_CONFIG, **CONSUMER_CONFIG)
 
@@ -238,7 +236,6 @@ if __name__ == "__main__":
                 logger.debug("Get model from KB via REST API")
                 file_path = get_floorplan_model(url)
                 with tempfile.TemporaryDirectory(prefix="mat_") as tmpdirname:
-
                     logger.debug("Converting to json-ld...")
                     if file_path.endswith(".fpm"):
                         # M2M transformation to json-ld representation
