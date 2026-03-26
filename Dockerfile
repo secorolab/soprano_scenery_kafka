@@ -1,20 +1,20 @@
 # syntax=docker/dockerfile:1
-FROM ubuntu:24.04
+FROM ghcr.io/secorolab/scenery_builder:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-RUN apt update && \
-    apt install -y software-properties-common git \
-    python3 python3-pip \
-    blender
+USER root
+RUN --mount=type=cache,target=/root/.cache/pip
+RUN python -m pip install confluent-kafka requests dotenv
 
-# New requirements for Kafka script and scenery_builder
-RUN pip install confluent-kafka requests dotenv git+https://github.com/secorolab/scenery_builder.git@devel -t /usr/src/app/modules
-COPY floorplan_consumer.py /usr/src/app/
-COPY config.toml /usr/src/app/
+RUN addgroup --gid 1000 soprano
+RUN adduser -G soprano -h /home/appuser -D appuser
 
-ENV BLENDER_USER_SCRIPTS=/usr/src/app
-WORKDIR /usr/src/app/
+USER appuser
+WORKDIR /home/mat
+COPY floorplan_consumer.py .
+COPY config.toml .
+RUN touch mat.log
 
-ENTRYPOINT []
-CMD ["blender", "-b", "--python", "/usr/src/app/floorplan_consumer.py"]
+
+CMD ["python", "floorplan_consumer.py"]
