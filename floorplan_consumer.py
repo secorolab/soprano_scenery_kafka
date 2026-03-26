@@ -201,6 +201,7 @@ if __name__ == "__main__":
             elif msg.error():
                 logger.error(msg.error())
             else:
+                logger.debug(f"Consumer received message in {topic} channel")
                 msg_count += 1
                 logger.info("Processing message {}".format(msg_count))
                 key = msg.key().decode("utf-8") if msg.key() is not None else ""
