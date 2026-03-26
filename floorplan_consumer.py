@@ -148,12 +148,11 @@ def transform_fpm_to_jsonld(file_path, dest_path="/tmp/floorplan"):
     return dest_path
 
 
-def generate_artefacts(model_path, out_path="/tmp/scenery", local=False):
+def generate_artefacts(model_path, out_path="/tmp/scenery"):
     # TODO Handle subfolders for different stories
 
-    local_cmd = "floorplan"
-    docker = ["blender", "-b", "--python", "modules/fpm/cli.py", "--"]
     args = [
+        "floorplan",
         "generate",
         "--config",
         "config.toml",
@@ -166,14 +165,6 @@ def generate_artefacts(model_path, out_path="/tmp/scenery", local=False):
         "mesh",
         "tts",
     ]
-
-    if local:
-        logger.debug("Local execution mode")
-        args.insert(0, local_cmd)
-    else:
-        logger.debug("Docker execution mode")
-        docker.extend(args)
-        args = docker
 
     os.makedirs(out_path, exist_ok=True)
     e = subprocess.run(args)
