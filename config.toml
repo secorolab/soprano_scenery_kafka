@@ -8,7 +8,7 @@
 ros_version = "ros2"
 ros_pkg = "gazebo_simulation"
 
-[generate.occ_grid]
+[generate.occ-grid]
 # generation parameters
 laser_height = 0.289 # Adjust based on laser height of robot
 border = 50
