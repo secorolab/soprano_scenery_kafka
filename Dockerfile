@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/secorolab/scenery_builder:latest
+FROM ghcr.io/secorolab/scenery_builder:devel
 
 WORKDIR /app
 
@@ -16,5 +16,5 @@ COPY floorplan_consumer.py .
 COPY config.toml .
 RUN touch mat.log
 
-
+ENTRYPOINT []
 CMD ["python", "floorplan_consumer.py"]
