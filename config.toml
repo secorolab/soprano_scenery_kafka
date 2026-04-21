@@ -22,6 +22,16 @@ occupied_value = 0
 free_value = 255
 source = "bim"
 
-#[generate.tts]
-#robot_translation_x = -0.7
-#robot_translation_z = 1.0
+[generate.soprano-hdt]
+robot_translation_x = -0.7
+robot_translation_z = 1.0
+
+[generate.soprano-gui]
+grid = true
+grid_resolution = 0.5
+robot_translation_x = -0.7
+robot_translation_z = 1.0
+
+[generate.soprano-rci]
+robot_translation_x = -0.7
+robot_translation_z = 1.0

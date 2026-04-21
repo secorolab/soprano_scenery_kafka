@@ -163,7 +163,9 @@ def generate_artefacts(model_path, out_path="/tmp/scenery"):
         "occ-grid",
         "gazebo",
         "mesh",
-        "tts",
+        "soprano-hdt",
+        "soprano-gui",
+        "soprano-rci",
     ]
 
     os.makedirs(out_path, exist_ok=True)
